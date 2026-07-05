@@ -37,7 +37,7 @@ describe("DataroomsService", () => {
     });
   });
 
-  it("searches folders and files with a trimmed case-insensitive query", async () => {
+  it("searches folders by name and files by name or indexed content", async () => {
     const folder = {
       id: "00000000-0000-0000-0000-000000000003",
       dataroomId: dataroom.id,
@@ -53,6 +53,7 @@ describe("DataroomsService", () => {
       name: "Q1 Financials.pdf",
       mimeType: "application/pdf",
       sizeBytes: 1000,
+      searchText: "Revenue growth and diligence notes",
       createdAt: dataroom.createdAt,
       updatedAt: dataroom.updatedAt,
     };
@@ -103,7 +104,10 @@ describe("DataroomsService", () => {
     expect(fileFindMany).toHaveBeenCalledWith({
       where: {
         dataroomId: dataroom.id,
-        name: { contains: "fin", mode: "insensitive" },
+        OR: [
+          { name: { contains: "fin", mode: "insensitive" } },
+          { searchText: { contains: "fin", mode: "insensitive" } },
+        ],
       },
       orderBy: { name: "asc" },
       take: 20,

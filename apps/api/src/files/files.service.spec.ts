@@ -30,6 +30,57 @@ const file = {
 const targetFolderId = "00000000-0000-0000-0000-000000000005";
 
 describe("FilesService", () => {
+  it("stores searchable text when uploading text-like files", async () => {
+    const create = vi.fn().mockResolvedValue({
+      ...file,
+      name: "notes.txt",
+      normalizedName: "notes.txt",
+      mimeType: "text/plain",
+      sizeBytes: 33,
+      storageKey: "00000000-0000-0000-0000-000000000004.txt",
+      searchText: "Revenue notes ARR grew by 18%.",
+    });
+    const service = new FilesService(
+      {
+        fileAsset: {
+          findFirst: vi.fn().mockResolvedValue(null),
+          create,
+        },
+      } as unknown as PrismaService,
+      {
+        assertOwner: vi.fn().mockResolvedValue({ id: file.dataroomId }),
+        assertFolderInDataroom: vi.fn().mockResolvedValue(undefined),
+      } as unknown as DataroomsService,
+      {
+        record: vi.fn().mockResolvedValue(undefined),
+      } as unknown as AuditService,
+      {
+        savePrivateFile: vi
+          .fn()
+          .mockResolvedValue("00000000-0000-0000-0000-000000000004.txt"),
+        delete: vi.fn().mockResolvedValue(undefined),
+      } as unknown as StorageService,
+    );
+
+    await service.upload(user, {
+      dataroomId: file.dataroomId,
+      folderId: null,
+      originalName: "notes.txt",
+      mimeType: "text/plain",
+      sizeBytes: 33,
+      buffer: Buffer.from("Revenue notes\nARR grew by 18%.", "utf8"),
+      maxUploadBytes: 1024,
+    });
+
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: "notes.txt",
+        mimeType: "text/plain",
+        searchText: "Revenue notes ARR grew by 18%.",
+      }),
+    });
+  });
+
   it("moves a file into a target folder and records audit", async () => {
     const update = vi.fn().mockResolvedValue({
       ...file,

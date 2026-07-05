@@ -19,34 +19,34 @@ model User {
 }
 
 model Dataroom {
-  id             String     @id @default(uuid()) @db.Uuid
+  id             String      @id @default(uuid()) @db.Uuid
   name           String
   normalizedName String
-  ownerId        String     @db.Uuid
-  owner          User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId        String      @db.Uuid
+  owner          User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   folders        Folder[]
   files          FileAsset[]
   auditLogs      AuditLog[]
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@unique([ownerId, normalizedName])
   @@index([ownerId])
 }
 
 model Folder {
-  id             String      @id @default(uuid()) @db.Uuid
-  dataroomId     String      @db.Uuid
-  parentFolderId String?     @db.Uuid
-  parentFolderKey String     @default("root")
-  name           String
-  normalizedName String
-  dataroom       Dataroom    @relation(fields: [dataroomId], references: [id], onDelete: Cascade)
-  parentFolder   Folder?     @relation("FolderChildren", fields: [parentFolderId], references: [id], onDelete: Cascade)
-  childFolders   Folder[]    @relation("FolderChildren")
-  files          FileAsset[]
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  id              String      @id @default(uuid()) @db.Uuid
+  dataroomId      String      @db.Uuid
+  parentFolderId  String?     @db.Uuid
+  parentFolderKey String      @default("root")
+  name            String
+  normalizedName  String
+  dataroom        Dataroom    @relation(fields: [dataroomId], references: [id], onDelete: Cascade)
+  parentFolder    Folder?     @relation("FolderChildren", fields: [parentFolderId], references: [id], onDelete: Cascade)
+  childFolders    Folder[]    @relation("FolderChildren")
+  files           FileAsset[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@unique([dataroomId, parentFolderKey, normalizedName])
   @@index([dataroomId])
@@ -54,19 +54,20 @@ model Folder {
 }
 
 model FileAsset {
-  id         String   @id @default(uuid()) @db.Uuid
-  dataroomId String   @db.Uuid
-  folderId   String?  @db.Uuid
-  folderKey  String   @default("root")
-  name       String
+  id             String   @id @default(uuid()) @db.Uuid
+  dataroomId     String   @db.Uuid
+  folderId       String?  @db.Uuid
+  folderKey      String   @default("root")
+  name           String
   normalizedName String
-  mimeType   String
-  sizeBytes  Int
-  storageKey String   @unique
-  dataroom   Dataroom @relation(fields: [dataroomId], references: [id], onDelete: Cascade)
-  folder     Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  mimeType       String
+  sizeBytes      Int
+  storageKey     String   @unique
+  searchText     String?  @db.Text
+  dataroom       Dataroom @relation(fields: [dataroomId], references: [id], onDelete: Cascade)
+  folder         Folder?  @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([dataroomId, folderKey, normalizedName])
   @@index([dataroomId])

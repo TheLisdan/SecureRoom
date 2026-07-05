@@ -146,7 +146,10 @@ export class DataroomsService {
       this.prisma.fileAsset.findMany({
         where: {
           dataroomId,
-          name: { contains: normalizedQuery, mode: "insensitive" },
+          OR: [
+            { name: { contains: normalizedQuery, mode: "insensitive" } },
+            { searchText: { contains: normalizedQuery, mode: "insensitive" } },
+          ],
         },
         orderBy: { name: "asc" },
         take: 20,

@@ -13,6 +13,7 @@ import { PrismaService } from "../prisma/prisma.service.js";
 import { StorageService } from "../storage/storage.service.js";
 import { validateFileUpload } from "./file-upload-validation.js";
 import { getPreviewContentType } from "./preview-types.js";
+import { extractSearchText } from "./search-text.js";
 
 type UploadInput = {
   dataroomId: string;
@@ -58,6 +59,11 @@ export class FilesService {
       input.buffer,
       validatedFile.storageExtension,
     );
+    const searchText = extractSearchText({
+      fileName: validatedFile.name,
+      mimeType: validatedFile.mimeType,
+      buffer: input.buffer,
+    });
 
     try {
       const file = await this.prisma.fileAsset
@@ -71,6 +77,7 @@ export class FilesService {
             mimeType: validatedFile.mimeType,
             sizeBytes: input.sizeBytes,
             storageKey,
+            searchText,
           },
         })
         .catch((error: unknown) =>

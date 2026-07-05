@@ -79,7 +79,7 @@ export function WorkspaceHeader({
                 <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   className="pl-9"
-                  placeholder="Search files and folders"
+                  placeholder="Search names or text content"
                   value={searchQuery}
                   onChange={(event) => onSearchQueryChange(event.target.value)}
                 />

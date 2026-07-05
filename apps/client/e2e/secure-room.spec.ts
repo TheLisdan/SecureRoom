@@ -141,8 +141,11 @@ test("manages a secure dataroom end to end", async ({ page }) => {
   await dropGeneratedPng(page, longImageName);
   await expect(page.getByRole("button", { name: longImageName })).toBeVisible();
 
-  await page.getByPlaceholder("Search files and folders").fill("sample");
+  await page.getByPlaceholder("Search names or text content").fill("sample");
   await expect(page.getByText("sample.pdf")).toBeVisible();
+  await page.getByPlaceholder("Search names or text content").fill("Revenue");
+  await expect(page.getByText("notes.txt")).toBeVisible();
+  await page.getByPlaceholder("Search names or text content").fill("sample");
 
   await page.getByText("sample.pdf").click();
   await expect(page.getByRole("button", { name: "Preview" })).toBeVisible();
@@ -155,7 +158,7 @@ test("manages a secure dataroom end to end", async ({ page }) => {
   await expect(previewFrame).toHaveAttribute("src", /^blob:/);
   await page.getByRole("button", { name: "Close" }).click();
 
-  await page.getByPlaceholder("Search files and folders").clear();
+  await page.getByPlaceholder("Search names or text content").clear();
 
   await page.getByRole("button", { name: "Move" }).click();
   const moveDialog = page.getByRole("dialog", { name: "Move file" });

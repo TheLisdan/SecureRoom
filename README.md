@@ -19,7 +19,7 @@ The assignment asked for a React Data Room SPA with dataroom creation, nested fo
 | Delete files                                 | Implemented                                                      |
 | Same-name edge cases                         | Folder and file names are unique within the same parent location |
 | Authentication extra credit                  | Implemented with email/password and httpOnly JWT cookie          |
-| Search extra credit                          | Implemented by filename within the selected dataroom             |
+| Search extra credit                          | Implemented by name and indexed text content within a dataroom   |
 
 No hosted URL is included in this repository. The app is intended to be reviewed locally with the setup below.
 
@@ -100,6 +100,7 @@ pnpm e2e
 - The local `StorageService` is intentionally small and replaceable. A production deploy should swap it for S3, R2 or GCS while keeping the same private-read interface.
 - The UI keeps page orchestration in `DataroomWorkspace`, while auth, dataroom navigation, file upload, table rows, details panel, previews and dialogs live in their own feature components.
 - Reusable behavior such as folder destinations, file tree state, accepted preview types and API error messages is kept in helper modules with focused tests instead of being embedded into JSX.
+- Search stays server-side. File names are searched directly, and safe text-like uploads (`txt`, `md`, `json`, `csv`) get a capped `searchText` index at upload time.
 - The client uses shadcn-style primitives (`Button`, `Dialog`, `AlertDialog`, `DropdownMenu`, `Badge`, `Skeleton`, `Alert`, `Empty`) so loading, empty, destructive and error states stay consistent.
 - Destructive actions use explicit confirmation dialogs, and upload/rename conflicts are surfaced as user-readable errors.
 - Loading states use skeletons in the app shell and file table rather than blank screens or layout jumps.
@@ -118,7 +119,7 @@ pnpm e2e
 ## Known Limits
 
 - Dataroom sharing, roles and permissions beyond a single owner are outside this MVP.
-- Search is filename-based. Full-text extraction was intentionally left out because it needs parser sandboxing and resource limits.
+- Content search is intentionally limited to allowlisted text-like files. PDF parsing, OCR and binary document extraction were left out because they need parser sandboxing and resource limits.
 - File storage is local to the API process. Hosted production use needs a private bucket adapter.
 - There is no seed script; create a user from the UI after starting the app.
 
