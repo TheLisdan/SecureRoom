@@ -1,0 +1,162 @@
+# SecureRoom
+
+Security-first Data Room MVP for storing, organizing and reviewing confidential due-diligence files.
+
+The assignment asked for a React Data Room SPA with dataroom creation, nested folders, file upload, file preview and basic CRUD flows. This implementation keeps the MVP small, but runs end to end with a real API, PostgreSQL persistence, private local file storage, typed shared contracts and authentication.
+
+## Requirement Coverage
+
+| Requirement                                  | Status                                                           |
+| -------------------------------------------- | ---------------------------------------------------------------- |
+| Create datarooms                             | Implemented                                                      |
+| Create nested folders                        | Implemented                                                      |
+| View folders and their contents              | Implemented with breadcrumb navigation and search                |
+| Rename folders                               | Implemented                                                      |
+| Delete folders recursively with nested files | Implemented                                                      |
+| Upload files                                 | Implemented with drag/drop and file picker                       |
+| View files in UI                             | Implemented for PDF, safe images, text, audio and video previews |
+| Rename files                                 | Implemented                                                      |
+| Delete files                                 | Implemented                                                      |
+| Same-name edge cases                         | Folder and file names are unique within the same parent location |
+| Authentication extra credit                  | Implemented with email/password and httpOnly JWT cookie          |
+| Search extra credit                          | Implemented by filename within the selected dataroom             |
+
+No hosted URL is included in this repository. The app is intended to be reviewed locally with the setup below.
+
+## Stack
+
+- `apps/client`: Vite, React 18, TypeScript, Tailwind, shadcn-style primitives, TanStack Query and TanStack Table.
+- `apps/api`: NestJS, Prisma, PostgreSQL, JWT cookie auth and private local storage.
+- `packages/api-contract`: shared Zod schemas, API route helpers and TypeScript types.
+
+## Project Structure
+
+```text
+apps/client/src/app              App shell, session bootstrap and providers
+apps/client/src/components/ui    Small shadcn-style primitives used across features
+apps/client/src/features/auth    Sign-in/sign-up UI and auth state usage
+apps/client/src/features/datarooms
+                                 Workspace orchestration, sidebar, header and workspace dialogs
+apps/client/src/features/files   Upload/dropzone, file table, row actions, preview, details and move flows
+apps/client/src/lib              API client, error helpers and shared client utilities
+apps/api/src/auth                Cookie auth, CSRF guard, rate-limited auth endpoints
+apps/api/src/datarooms           Dataroom ownership and top-level room operations
+apps/api/src/folders             Folder tree CRUD and recursive delete behavior
+apps/api/src/files               File metadata, upload validation, preview/download access
+apps/api/src/storage             Private local object storage adapter
+packages/api-contract/src        Shared Zod schemas and route contracts
+```
+
+## Local Setup
+
+```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env
+cp apps/client/.env.example apps/client/.env
+docker compose up -d
+pnpm --filter api prisma:migrate
+pnpm dev
+```
+
+Client: `http://localhost:5173`
+
+API: `http://localhost:3000`
+
+Create an account from the sign-up screen, then use the same credentials to sign in.
+
+If `docker compose` is not available but Docker itself is running, start PostgreSQL with a plain container:
+
+```bash
+docker run --name secure-room-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=secure_room \
+  -p 5432:5432 \
+  -d postgres:16-alpine
+```
+
+If Docker cannot connect to its daemon, open Docker Desktop first or use any local PostgreSQL instance and keep `DATABASE_URL` in `apps/api/.env` aligned with it.
+
+## Scripts
+
+```bash
+pnpm dev
+pnpm build
+pnpm lint
+pnpm test
+pnpm --filter client exec playwright install chromium
+pnpm e2e
+```
+
+`pnpm e2e` starts the API and client through Playwright, but it expects PostgreSQL to be running and migrations to have already been applied with `pnpm --filter api prisma:migrate`.
+
+## Design Decisions
+
+- I used a real backend instead of browser-only mocks because secure file access, ownership checks and recursive deletes are easier to reason about when enforced server-side.
+- API and client share Zod schemas from `packages/api-contract`, so request/response shapes stay typed across the workspace.
+- Datarooms, folders, files, auth, storage and audit logging are separate Nest modules. The services stay focused on domain operations rather than framework plumbing.
+- Folder and file uniqueness is enforced per sibling location with normalized names, backed by Prisma unique constraints.
+- Files are stored outside public static hosting. API preview/download routes authenticate the user and verify dataroom ownership before opening the private storage object.
+- The local `StorageService` is intentionally small and replaceable. A production deploy should swap it for S3, R2 or GCS while keeping the same private-read interface.
+- The UI keeps page orchestration in `DataroomWorkspace`, while auth, dataroom navigation, file upload, table rows, details panel, previews and dialogs live in their own feature components.
+- Reusable behavior such as folder destinations, file tree state, accepted preview types and API error messages is kept in helper modules with focused tests instead of being embedded into JSX.
+- The client uses shadcn-style primitives (`Button`, `Dialog`, `AlertDialog`, `DropdownMenu`, `Badge`, `Skeleton`, `Alert`, `Empty`) so loading, empty, destructive and error states stay consistent.
+- Destructive actions use explicit confirmation dialogs, and upload/rename conflicts are surfaced as user-readable errors.
+- Loading states use skeletons in the app shell and file table rather than blank screens or layout jumps.
+
+## Security Notes
+
+- Auth uses httpOnly cookies; production cookies are marked `secure`.
+- Mutating cookie-authenticated requests require an `X-CSRF-Token` header.
+- Auth endpoints are rate limited.
+- API enables Helmet and strict CORS from `CLIENT_ORIGIN`.
+- Storage keys are generated server-side and raw filenames are never used as paths.
+- Uploads reject empty files, unsafe names and files over `MAX_UPLOAD_MB`.
+- Preview rendering is allowlisted by MIME type and avoids inline active formats such as HTML, SVG, XML and JavaScript.
+- Sensitive values such as passwords, tokens, signed URLs and file contents are not logged by application code.
+
+## Known Limits
+
+- Dataroom sharing, roles and permissions beyond a single owner are outside this MVP.
+- Search is filename-based. Full-text extraction was intentionally left out because it needs parser sandboxing and resource limits.
+- File storage is local to the API process. Hosted production use needs a private bucket adapter.
+- There is no seed script; create a user from the UI after starting the app.
+
+## Environment
+
+Required API variables:
+
+```bash
+DATABASE_URL=
+JWT_SECRET=
+CLIENT_ORIGIN=
+COOKIE_DOMAIN=
+NODE_ENV=production
+MAX_UPLOAD_MB=20
+STORAGE_DIR=./private-storage
+```
+
+Use a unique high-entropy `JWT_SECRET` in production. The example secret is accepted only for local development.
+
+Required client variable:
+
+```bash
+VITE_API_URL=
+```
+
+## Verification
+
+Latest local checks run during review:
+
+```bash
+pnpm format
+pnpm lint
+pnpm test
+pnpm build
+```
+
+All passed. The test suite covers shared contracts, API domain services/security helpers, React components, file-manager state helpers and the main workspace flow.
+
+## AI Usage
+
+AI was used as an implementation and review assistant for this take-home: project structure review, best-practice checks, small UX refinement, test update and README editing. The code paths were still checked against the assignment requirements, and the final verification commands above were run locally.
