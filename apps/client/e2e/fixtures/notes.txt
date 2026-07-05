@@ -1,0 +1,3 @@
+Revenue notes
+
+This text file is used to verify generic file upload and text preview.
