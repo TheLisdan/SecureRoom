@@ -1,0 +1,19 @@
+{
+  "name": "secure-room",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.5.1",
+  "scripts": {
+    "dev": "pnpm --filter @secure-room/api-contract build && pnpm --filter api prisma:generate && pnpm --parallel --filter api --filter client dev",
+    "build": "pnpm --filter @secure-room/api-contract build && pnpm --filter api prisma:generate && pnpm --filter api build && pnpm --filter client build",
+    "lint": "pnpm --filter api lint && pnpm --filter client lint",
+    "test": "pnpm --filter @secure-room/api-contract build && pnpm --filter @secure-room/api-contract test && pnpm --filter api test && pnpm --filter client test",
+    "e2e": "pnpm --filter client e2e",
+    "format": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

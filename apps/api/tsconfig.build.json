@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@secure-room/api-contract": [
+        "../../packages/api-contract/dist/index.d.ts"
+      ]
+    }
+  },
+  "exclude": ["test", "**/*.spec.ts"]
+}
