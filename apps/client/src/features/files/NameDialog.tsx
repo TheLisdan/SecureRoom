@@ -15,7 +15,7 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { getErrorMessage } from "../../lib/api-error";
 
-type NameDialogState =
+export type NameDialogState =
   | { type: "createDataroom" }
   | { type: "renameDataroom"; name: string }
   | { type: "createFolder" }
@@ -68,6 +68,10 @@ export function NameDialog({
         : state?.type === "createFolder"
           ? "Folder names must be unique in this location."
           : "Names must stay clear and safe for storage.";
+  const minLength =
+    state?.type === "createDataroom" || state?.type === "renameDataroom"
+      ? 2
+      : 1;
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -91,6 +95,9 @@ export function NameDialog({
               id="item-name"
               value={name}
               onChange={(event) => setName(event.target.value)}
+              required
+              minLength={minLength}
+              maxLength={180}
               autoFocus
             />
           </div>

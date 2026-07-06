@@ -1,9 +1,4 @@
-import type {
-  Dataroom,
-  FileManagerItem,
-  FileRecord,
-  Folder,
-} from "@secure-room/api-contract";
+import type { Dataroom, Folder } from "@secure-room/api-contract";
 
 import { DataroomDeleteDialog } from "./DataroomDeleteDialog";
 import { FilePreviewDialog } from "../../files/FilePreviewDialog";
@@ -11,61 +6,50 @@ import { ItemDeleteDialog } from "../../files/ItemDeleteDialog";
 import { MoveFileDialog } from "../../files/MoveFileDialog";
 import { NameDialog } from "../../files/NameDialog";
 import type { FileManagerMutations } from "../../files/queries";
+import {
+  submitDataroomDelete,
+  submitItemDelete,
+  submitMoveFile,
+  submitNameDialog,
+} from "../workspace-dialog-actions";
+import type { WorkspaceState } from "../useWorkspaceState";
 import type { DataroomMutations } from "../queries";
 
-export type NameDialogState =
-  | { type: "createDataroom" }
-  | { type: "renameDataroom"; name: string }
-  | { type: "createFolder" }
-  | { type: "renameItem"; item: FileManagerItem };
-
 type WorkspaceDialogsProps = {
-  nameDialog: NameDialogState | null;
-  deleteDialog: FileManagerItem | null;
-  deleteDataroomDialogOpen: boolean;
-  previewFile: FileRecord | null;
-  moveFile: FileRecord | null;
+  workspace: WorkspaceState;
   folders: Folder[];
   selectedDataroom: Dataroom | null;
   datarooms: Dataroom[];
-  selectedDataroomId: string | null;
-  currentFolderId: string | null;
-  selectedItem: FileManagerItem | null;
   dataroomMutations: DataroomMutations;
   fileMutations: FileManagerMutations;
-  setNameDialog: (state: NameDialogState | null) => void;
-  setDeleteDialog: (item: FileManagerItem | null) => void;
-  setDeleteDataroomDialogOpen: (open: boolean) => void;
-  setPreviewFile: (file: FileRecord | null) => void;
-  setMoveFile: (file: FileRecord | null) => void;
-  setSelectedDataroomId: (id: string | null) => void;
-  setCurrentFolderId: (id: string | null) => void;
-  setSelectedItem: (item: FileManagerItem | null) => void;
 };
 
 export function WorkspaceDialogs({
-  nameDialog,
-  deleteDialog,
-  deleteDataroomDialogOpen,
-  previewFile,
-  moveFile,
+  workspace,
   folders,
   selectedDataroom,
   datarooms,
-  selectedDataroomId,
-  currentFolderId,
-  selectedItem,
   dataroomMutations,
   fileMutations,
-  setNameDialog,
-  setDeleteDialog,
-  setDeleteDataroomDialogOpen,
-  setPreviewFile,
-  setMoveFile,
-  setSelectedDataroomId,
-  setCurrentFolderId,
-  setSelectedItem,
 }: WorkspaceDialogsProps) {
+  const {
+    nameDialog,
+    setNameDialog,
+    deleteDialog,
+    setDeleteDialog,
+    deleteDataroomDialogOpen,
+    setDeleteDataroomDialogOpen,
+    previewFile,
+    setPreviewFile,
+    moveFile,
+    setMoveFile,
+    selectedDataroomId,
+    setSelectedDataroomId,
+    currentFolderId,
+    setCurrentFolderId,
+    selectedItem,
+    setSelectedItem,
+  } = workspace;
   const closeNameDialog = () => setNameDialog(null);
 
   return (
@@ -109,21 +93,17 @@ export function WorkspaceDialogs({
             setMoveFile(null);
           }
         }}
-        onSubmit={(folderId) => {
-          if (!moveFile) {
-            return;
-          }
-
-          fileMutations.moveFile.mutate(
-            { id: moveFile.id, folderId },
-            {
-              onSuccess: () => {
-                setSelectedItem(null);
-                setMoveFile(null);
-              },
+        onSubmit={(folderId) =>
+          submitMoveFile({
+            file: moveFile,
+            folderId,
+            fileMutations,
+            onMoved: () => {
+              setSelectedItem(null);
+              setMoveFile(null);
             },
-          );
-        }}
+          })
+        }
       />
 
       <ItemDeleteDialog
@@ -133,24 +113,15 @@ export function WorkspaceDialogs({
             setDeleteDialog(null);
           }
         }}
-        onConfirm={() => {
-          if (!deleteDialog) {
-            return;
-          }
-
-          const mutation =
-            deleteDialog.type === "folder"
-              ? fileMutations.deleteFolder.mutate
-              : fileMutations.deleteFile.mutate;
-          mutation(deleteDialog.id, {
-            onSuccess: () => {
-              if (selectedItem?.id === deleteDialog.id) {
-                setSelectedItem(null);
-              }
-              setDeleteDialog(null);
-            },
-          });
-        }}
+        onConfirm={() =>
+          submitItemDelete({
+            item: deleteDialog,
+            selectedItem,
+            fileMutations,
+            onDeletedSelectedItem: () => setSelectedItem(null),
+            onClose: () => setDeleteDialog(null),
+          })
+        }
         error={
           fileMutations.deleteFolder.error ?? fileMutations.deleteFile.error
         }
@@ -162,24 +133,19 @@ export function WorkspaceDialogs({
         isPending={dataroomMutations.delete.isPending}
         error={dataroomMutations.delete.error}
         onOpenChange={setDeleteDataroomDialogOpen}
-        onConfirm={() => {
-          if (!selectedDataroom) {
-            return;
-          }
-
-          const nextDataroomId =
-            datarooms.find((dataroom) => dataroom.id !== selectedDataroom.id)
-              ?.id ?? null;
-
-          dataroomMutations.delete.mutate(selectedDataroom.id, {
-            onSuccess: () => {
+        onConfirm={() =>
+          submitDataroomDelete({
+            dataroom: selectedDataroom,
+            datarooms,
+            dataroomMutations,
+            onDeleted: (nextDataroomId) => {
               setSelectedDataroomId(nextDataroomId);
               setSelectedItem(null);
               setCurrentFolderId(null);
               setDeleteDataroomDialogOpen(false);
             },
-          });
-        }}
+          })
+        }
       />
 
       <FilePreviewDialog
@@ -188,67 +154,4 @@ export function WorkspaceDialogs({
       />
     </>
   );
-}
-
-type NameDialogSubmitInput = {
-  name: string;
-  nameDialog: NameDialogState | null;
-  selectedDataroom: Dataroom | null;
-  selectedDataroomId: string | null;
-  currentFolderId: string | null;
-  dataroomMutations: DataroomMutations;
-  fileMutations: FileManagerMutations;
-  onCreatedDataroom: (id: string) => void;
-  onClose: () => void;
-};
-
-function submitNameDialog({
-  name,
-  nameDialog,
-  selectedDataroom,
-  selectedDataroomId,
-  currentFolderId,
-  dataroomMutations,
-  fileMutations,
-  onCreatedDataroom,
-  onClose,
-}: NameDialogSubmitInput) {
-  if (!nameDialog) {
-    return;
-  }
-
-  if (nameDialog.type === "createDataroom") {
-    dataroomMutations.create.mutate(name, {
-      onSuccess: (dataroom) => {
-        onCreatedDataroom(dataroom.id);
-        onClose();
-      },
-    });
-    return;
-  }
-
-  if (nameDialog.type === "renameDataroom" && selectedDataroom) {
-    dataroomMutations.rename.mutate(
-      { id: selectedDataroom.id, name },
-      { onSuccess: onClose },
-    );
-    return;
-  }
-
-  if (nameDialog.type === "createFolder" && selectedDataroomId) {
-    fileMutations.createFolder.mutate(
-      { parentFolderId: currentFolderId, name },
-      { onSuccess: onClose },
-    );
-    return;
-  }
-
-  if (nameDialog.type === "renameItem") {
-    const item = nameDialog.item;
-    const mutation =
-      item.type === "folder"
-        ? fileMutations.renameFolder.mutate
-        : fileMutations.renameFile.mutate;
-    mutation({ id: item.id, name }, { onSuccess: onClose });
-  }
 }

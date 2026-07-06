@@ -1,33 +1,25 @@
-import { useState } from "react";
-import type { FormEvent } from "react";
 import { LockKeyhole } from "lucide-react";
 
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { getErrorMessage } from "../../lib/api-error";
-import { useAuthMutations } from "./queries";
-
-type AuthMode = "login" | "register";
+import { useAuthForm } from "./useAuthForm";
 
 export function AuthScreen() {
-  const [mode, setMode] = useState<AuthMode>("login");
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
-  const [password, setPassword] = useState("");
-  const { login, register } = useAuthMutations();
-  const activeMutation = mode === "login" ? login : register;
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (mode === "login") {
-      login.mutate({ email, password });
-      return;
-    }
-
-    register.mutate({ email, name, password });
-  };
+  const authForm = useAuthForm();
+  const {
+    mode,
+    email,
+    setEmail,
+    name,
+    setName,
+    password,
+    setPassword,
+    activeMutation,
+    submit,
+    toggleMode,
+  } = authForm;
 
   return (
     <main className="flex min-h-screen bg-muted">
@@ -54,7 +46,7 @@ export function AuthScreen() {
 
       <section className="flex flex-1 items-center justify-center p-6">
         <form
-          onSubmit={handleSubmit}
+          onSubmit={submit}
           className="w-full max-w-md rounded-lg border bg-background p-8 shadow-panel"
         >
           <div className="mb-8">
@@ -76,6 +68,9 @@ export function AuthScreen() {
                   id="name"
                   value={name}
                   onChange={(event) => setName(event.target.value)}
+                  required={mode === "register"}
+                  minLength={2}
+                  maxLength={80}
                 />
               </div>
             ) : null}
@@ -87,6 +82,8 @@ export function AuthScreen() {
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
+                required
+                maxLength={255}
               />
             </div>
 
@@ -97,6 +94,9 @@ export function AuthScreen() {
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
+                required
+                minLength={mode === "register" ? 10 : 1}
+                maxLength={128}
               />
             </div>
           </div>
@@ -122,7 +122,7 @@ export function AuthScreen() {
           <button
             className="mt-4 w-full text-center text-sm text-muted-foreground hover:text-foreground"
             type="button"
-            onClick={() => setMode(mode === "login" ? "register" : "login")}
+            onClick={toggleMode}
           >
             {mode === "login"
               ? "Need an account? Create one"

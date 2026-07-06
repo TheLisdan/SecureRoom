@@ -4,6 +4,9 @@
   "version": "0.1.0",
   "packageManager": "pnpm@11.5.1",
   "scripts": {
+    "b": "pnpm --filter api",
+    "w": "pnpm --filter client",
+    "sh": "pnpm --filter @secure-room/api-contract",
     "dev": "pnpm --filter @secure-room/api-contract build && pnpm --filter api prisma:generate && pnpm --parallel --filter api --filter client dev",
     "build": "pnpm --filter @secure-room/api-contract build && pnpm --filter api prisma:generate && pnpm --filter api build && pnpm --filter client build",
     "lint": "pnpm --filter api lint && pnpm --filter client lint",

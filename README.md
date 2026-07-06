@@ -54,7 +54,7 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/client/.env.example apps/client/.env
 docker compose up -d
-pnpm --filter api prisma:migrate
+pnpm b prisma:migrate
 pnpm dev
 ```
 
@@ -84,11 +84,19 @@ pnpm dev
 pnpm build
 pnpm lint
 pnpm test
-pnpm --filter client exec playwright install chromium
+pnpm w exec playwright install chromium
 pnpm e2e
 ```
 
-`pnpm e2e` starts the API and client through Playwright, but it expects PostgreSQL to be running and migrations to have already been applied with `pnpm --filter api prisma:migrate`.
+Shortcut aliases are available for focused package work:
+
+```bash
+pnpm w <script>   # client
+pnpm b <script>   # api
+pnpm sh <script>  # shared API contract
+```
+
+`pnpm e2e` starts the API and client through Playwright, but it expects PostgreSQL to be running and migrations to have already been applied with `pnpm b prisma:migrate`.
 
 ## Design Decisions
 
@@ -157,7 +165,3 @@ pnpm build
 ```
 
 All passed. The test suite covers shared contracts, API domain services/security helpers, React components, file-manager state helpers and the main workspace flow.
-
-## AI Usage
-
-AI was used as an implementation and review assistant for this take-home: project structure review, best-practice checks, small UX refinement, test update and README editing. The code paths were still checked against the assignment requirements, and the final verification commands above were run locally.
