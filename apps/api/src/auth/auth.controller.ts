@@ -39,8 +39,8 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const session = await this.authService.register(body);
-    this.setSessionCookies(response, session.token);
-    return { user: session.user };
+    const csrfToken = this.setSessionCookies(response, session.token);
+    return { user: session.user, csrfToken };
   }
 
   @Post("login")
@@ -51,8 +51,8 @@ export class AuthController {
     @Res({ passthrough: true }) response: Response,
   ) {
     const session = await this.authService.login(body);
-    this.setSessionCookies(response, session.token);
-    return { user: session.user };
+    const csrfToken = this.setSessionCookies(response, session.token);
+    return { user: session.user, csrfToken };
   }
 
   @Post("logout")
@@ -68,31 +68,35 @@ export class AuthController {
     @CurrentUser() user: AuthUser,
     @Res({ passthrough: true }) response: Response,
   ) {
-    this.setCsrfCookie(response);
-    return { user };
+    const csrfToken = this.setCsrfCookie(response);
+    return { user, csrfToken };
   }
 
-  private setSessionCookies(response: Response, token: string): void {
+  private setSessionCookies(response: Response, token: string): string {
     response.cookie(sessionCookieName, token, {
       ...this.sessionCookieOptions(),
       maxAge: 1000 * 60 * 60 * 8,
     });
-    this.setCsrfCookie(response);
+    return this.setCsrfCookie(response);
   }
 
-  private setCsrfCookie(response: Response): void {
-    response.cookie(csrfCookieName, randomBytes(32).toString("base64url"), {
+  private setCsrfCookie(response: Response): string {
+    const csrfToken = randomBytes(32).toString("base64url");
+
+    response.cookie(csrfCookieName, csrfToken, {
       ...this.csrfCookieOptions(),
       maxAge: 1000 * 60 * 60 * 8,
     });
+
+    return csrfToken;
   }
 
   private baseCookieOptions() {
     const env = loadEnv();
 
     return {
-      secure: env.NODE_ENV === "production",
-      sameSite: "strict" as const,
+      secure: env.NODE_ENV === "production" || env.COOKIE_SAME_SITE === "none",
+      sameSite: env.COOKIE_SAME_SITE,
       path: "/",
       domain: env.COOKIE_DOMAIN || undefined,
     };

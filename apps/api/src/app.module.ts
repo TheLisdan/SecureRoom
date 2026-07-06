@@ -10,6 +10,7 @@ import { CsrfGuard } from "./auth/csrf.guard.js";
 import { DataroomsModule } from "./datarooms/datarooms.module.js";
 import { FilesModule } from "./files/files.module.js";
 import { FoldersModule } from "./folders/folders.module.js";
+import { HealthController } from "./health.controller.js";
 import { PrismaModule } from "./prisma/prisma.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 
@@ -25,6 +26,7 @@ import { StorageModule } from "./storage/storage.module.js";
     FoldersModule,
     FilesModule,
   ],
+  controllers: [HealthController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: CsrfGuard },

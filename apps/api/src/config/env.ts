@@ -15,6 +15,7 @@ const envSchema = z
     JWT_SECRET: z.string().min(16),
     CLIENT_ORIGIN: z.string().url(),
     COOKIE_DOMAIN: z.string().optional().default(""),
+    COOKIE_SAME_SITE: z.enum(["strict", "lax", "none"]).default("strict"),
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),

@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: secure-room-api
+    runtime: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: ./apps/api/Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: COOKIE_DOMAIN
+        value: ""
+      - key: COOKIE_SAME_SITE
+        value: none
+      - key: NODE_ENV
+        value: production
+      - key: MAX_UPLOAD_MB
+        value: "20"
+      - key: STORAGE_DIR
+        value: ./private-storage

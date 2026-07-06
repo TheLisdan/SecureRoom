@@ -25,6 +25,7 @@ const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const csrfCookieName = "csrf_token";
 const csrfHeaderName = "X-CSRF-Token";
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+let responseCsrfToken: string | null = null;
 
 type RequestOptions = RequestInit & {
   body?: BodyInit | null;
@@ -42,7 +43,7 @@ async function request<T>(
     headers.set("Content-Type", "application/json");
   }
 
-  const csrfToken = readCookie(csrfCookieName);
+  const csrfToken = getCsrfToken();
   if (unsafeMethods.has(method.toUpperCase()) && csrfToken) {
     headers.set(csrfHeaderName, csrfToken);
   }
@@ -62,10 +63,15 @@ async function request<T>(
     return schema.parse({});
   }
 
-  return schema.parse(await response.json());
+  const parsed = schema.parse(await response.json());
+  rememberResponseCsrfToken(parsed);
+  return parsed;
 }
 
-const userResponseSchema = z.object({ user: authUserSchema });
+const userResponseSchema = z.object({
+  user: authUserSchema,
+  csrfToken: z.string().min(1).optional(),
+});
 const dataroomsResponseSchema = z.object({
   datarooms: z.array(dataroomSchema),
 });
@@ -256,7 +262,7 @@ export function uploadFile(input: {
     request.open("POST", `${apiUrl}${apiRoutes.files.upload}`);
     request.withCredentials = true;
 
-    const csrfToken = readCookie(csrfCookieName);
+    const csrfToken = getCsrfToken();
     if (csrfToken) {
       request.setRequestHeader(csrfHeaderName, csrfToken);
     }
@@ -314,4 +320,20 @@ function readCookie(name: string): string | null {
   const cookie = cookies.find((value) => value.startsWith(prefix));
 
   return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+}
+
+function getCsrfToken(): string | null {
+  return readCookie(csrfCookieName) ?? responseCsrfToken;
+}
+
+function rememberResponseCsrfToken(value: unknown): void {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "csrfToken" in value &&
+    typeof value.csrfToken === "string" &&
+    value.csrfToken.length > 0
+  ) {
+    responseCsrfToken = value.csrfToken;
+  }
 }

@@ -79,4 +79,35 @@ describe("api client", () => {
     expect(init?.body).toBe(JSON.stringify({ folderId }));
     expect(new Headers(init?.headers).get("X-CSRF-Token")).toBe("test-token");
   });
+
+  it("uses the CSRF token returned by auth responses when no readable cookie exists", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            user: {
+              id: "00000000-0000-0000-0000-000000000001",
+              email: "owner@example.com",
+              name: "Owner",
+            },
+            csrfToken: "response-token",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), { status: 200 }),
+      );
+
+    await api.login({
+      email: "owner@example.com",
+      password: "correct-horse",
+    });
+    await api.deleteDataroom("00000000-0000-0000-0000-000000000002");
+
+    const deleteRequest = fetchMock.mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(deleteRequest.headers).get("X-CSRF-Token")).toBe(
+      "response-token",
+    );
+  });
 });
