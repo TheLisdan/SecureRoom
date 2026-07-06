@@ -20,7 +20,7 @@ const dataroom = {
 };
 
 describe("DataroomsService", () => {
-  it("rejects access when the dataroom belongs to another owner", async () => {
+  it("does not reveal dataroom existence across owners", async () => {
     const service = createService({
       dataroom: {
         findUnique: vi.fn().mockResolvedValue({
@@ -33,8 +33,29 @@ describe("DataroomsService", () => {
     await expect(
       service.assertOwner(owner.id, dataroom.id),
     ).rejects.toMatchObject({
-      code: "FORBIDDEN",
+      code: "NOT_FOUND",
+      message: "Resource was not found.",
     });
+  });
+
+  it("rejects oversized search queries before hitting the search indexes", async () => {
+    const folderFindMany = vi.fn();
+    const fileFindMany = vi.fn();
+    const service = createService({
+      dataroom: {
+        findUnique: vi.fn().mockResolvedValue(dataroom),
+      },
+      folder: { findMany: folderFindMany },
+      fileAsset: { findMany: fileFindMany },
+    });
+
+    await expect(
+      service.search(owner, dataroom.id, "x".repeat(121)),
+    ).rejects.toMatchObject({
+      code: "SEARCH_QUERY_TOO_LONG",
+    });
+    expect(folderFindMany).not.toHaveBeenCalled();
+    expect(fileFindMany).not.toHaveBeenCalled();
   });
 
   it("searches folders by name and files by name or indexed content", async () => {

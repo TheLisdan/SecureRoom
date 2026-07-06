@@ -34,6 +34,19 @@ describe("security utilities", () => {
     );
   });
 
+  it("rejects short production JWT secrets", () => {
+    withEnv(
+      {
+        ...baseEnv,
+        NODE_ENV: "production",
+        JWT_SECRET: "short-production-secret",
+      },
+      () => {
+        expect(() => loadEnv()).toThrow();
+      },
+    );
+  });
+
   it("parses local environment values into typed config", () => {
     withEnv(
       { ...baseEnv, NODE_ENV: "development", MAX_UPLOAD_MB: "25" },

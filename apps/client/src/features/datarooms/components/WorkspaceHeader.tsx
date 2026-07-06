@@ -70,6 +70,7 @@ export function WorkspaceHeader({
                   placeholder="Search names or text content"
                   value={searchQuery}
                   onChange={(event) => onSearchQueryChange(event.target.value)}
+                  maxLength={120}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-3">

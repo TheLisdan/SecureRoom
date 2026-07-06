@@ -247,7 +247,7 @@ export class FilesService {
     });
 
     if (!file) {
-      throw notFound("File was not found.");
+      throw notFound();
     }
 
     return file;

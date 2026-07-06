@@ -2,12 +2,14 @@ import { Injectable } from "@nestjs/common";
 import type { AuthUser } from "@secure-room/api-contract";
 
 import { AuditService } from "../audit/audit.service.js";
-import { conflict, forbidden, notFound } from "../common/domain-error.js";
+import { badRequest, conflict, notFound } from "../common/domain-error.js";
 import { throwConflictOnUniqueConstraint } from "../common/prisma-errors.js";
 import { normalizeSiblingName } from "../common/sibling-key.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { StorageService } from "../storage/storage.service.js";
 import { mapDataroom, mapFile, mapFolder } from "./mappers.js";
+
+const maxSearchQueryLength = 120;
 
 @Injectable()
 export class DataroomsService {
@@ -134,6 +136,10 @@ export class DataroomsService {
       return { folders: [], files: [] };
     }
 
+    if (normalizedQuery.length > maxSearchQueryLength) {
+      throw badRequest("SEARCH_QUERY_TOO_LONG", "Search query is too long.");
+    }
+
     const [folders, files] = await Promise.all([
       this.prisma.folder.findMany({
         where: {
@@ -167,12 +173,8 @@ export class DataroomsService {
       where: { id: dataroomId },
     });
 
-    if (!dataroom) {
-      throw notFound("Dataroom was not found.");
-    }
-
-    if (dataroom.ownerId !== userId) {
-      throw forbidden();
+    if (!dataroom || dataroom.ownerId !== userId) {
+      throw notFound();
     }
 
     return dataroom;

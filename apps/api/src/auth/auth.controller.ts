@@ -92,7 +92,7 @@ export class AuthController {
 
     return {
       secure: env.NODE_ENV === "production",
-      sameSite: "lax" as const,
+      sameSite: "strict" as const,
       path: "/",
       domain: env.COOKIE_DOMAIN || undefined,
     };

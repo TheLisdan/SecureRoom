@@ -30,6 +30,14 @@ const envSchema = z
         message: "JWT_SECRET must be replaced before production.",
       });
     }
+
+    if (env.NODE_ENV === "production" && env.JWT_SECRET.length < 32) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["JWT_SECRET"],
+        message: "JWT_SECRET must be at least 32 characters in production.",
+      });
+    }
   });
 
 export type AppEnv = z.infer<typeof envSchema>;

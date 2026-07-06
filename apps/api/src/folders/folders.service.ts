@@ -134,7 +134,7 @@ export class FoldersService {
     });
 
     if (!folder) {
-      throw notFound("Folder was not found.");
+      throw notFound();
     }
 
     return folder;

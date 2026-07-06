@@ -115,7 +115,7 @@ pnpm sh <script>  # shared API contract
 
 ## Security Notes
 
-- Auth uses httpOnly cookies; production cookies are marked `secure`.
+- Auth uses httpOnly SameSite=strict cookies; production cookies are marked `secure`.
 - Mutating cookie-authenticated requests require an `X-CSRF-Token` header.
 - Auth endpoints are rate limited.
 - API enables Helmet and strict CORS from `CLIENT_ORIGIN`.
