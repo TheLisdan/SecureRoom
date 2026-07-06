@@ -21,6 +21,18 @@ describe("CsrfGuard", () => {
     ).toBe(true);
   });
 
+  it("allows bearer-authenticated mutations without CSRF cookies", () => {
+    expect(
+      guard.canActivate(
+        contextFor({
+          method: "POST",
+          path: "/datarooms",
+          headers: { authorization: "Bearer token" },
+        }),
+      ),
+    ).toBe(true);
+  });
+
   it("rejects cookie-authenticated mutations without a matching header", () => {
     expect(() =>
       guard.canActivate(

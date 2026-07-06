@@ -24,6 +24,7 @@ import { ApiClientError, parseApiError } from "./api-error";
 const apiUrl = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 const csrfCookieName = "csrf_token";
 const csrfHeaderName = "X-CSRF-Token";
+const authTokenStorageKey = "secure_room_access_token";
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 let responseCsrfToken: string | null = null;
 
@@ -41,6 +42,11 @@ async function request<T>(
 
   if (options.body && !(options.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const authToken = getStoredAuthToken();
+  if (authToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${authToken}`);
   }
 
   const csrfToken = getCsrfToken();
@@ -65,12 +71,14 @@ async function request<T>(
 
   const parsed = schema.parse(await response.json());
   rememberResponseCsrfToken(parsed);
+  rememberResponseAuthToken(parsed);
   return parsed;
 }
 
 const userResponseSchema = z.object({
   user: authUserSchema,
   csrfToken: z.string().min(1).optional(),
+  accessToken: z.string().min(1).optional(),
 });
 const dataroomsResponseSchema = z.object({
   datarooms: z.array(dataroomSchema),
@@ -118,7 +126,12 @@ export const api = {
   },
 
   async logout(): Promise<void> {
-    await request(apiRoutes.auth.logout, z.object({}), { method: "POST" });
+    try {
+      await request(apiRoutes.auth.logout, z.object({}), { method: "POST" });
+    } finally {
+      clearStoredAuthToken();
+      responseCsrfToken = null;
+    }
   },
 
   async listDatarooms(): Promise<Dataroom[]> {
@@ -242,6 +255,11 @@ export const api = {
   downloadUrl(fileId: string): string {
     return `${apiUrl}${apiRoutes.files.download(fileId)}`;
   },
+
+  authHeaders(): HeadersInit {
+    const authToken = getStoredAuthToken();
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
+  },
 };
 
 export function uploadFile(input: {
@@ -265,6 +283,11 @@ export function uploadFile(input: {
     const csrfToken = getCsrfToken();
     if (csrfToken) {
       request.setRequestHeader(csrfHeaderName, csrfToken);
+    }
+
+    const authToken = getStoredAuthToken();
+    if (authToken) {
+      request.setRequestHeader("Authorization", `Bearer ${authToken}`);
     }
 
     request.upload.addEventListener("progress", (event) => {
@@ -336,4 +359,45 @@ function rememberResponseCsrfToken(value: unknown): void {
   ) {
     responseCsrfToken = value.csrfToken;
   }
+}
+
+function rememberResponseAuthToken(value: unknown): void {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "accessToken" in value &&
+    typeof value.accessToken === "string" &&
+    value.accessToken.length > 0
+  ) {
+    setStoredAuthToken(value.accessToken);
+  }
+}
+
+function getStoredAuthToken(): string | null {
+  try {
+    return localStorage.getItem(authTokenStorageKey);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredAuthToken(token: string): void {
+  try {
+    localStorage.setItem(authTokenStorageKey, token);
+  } catch {
+    return;
+  }
+}
+
+function clearStoredAuthToken(): void {
+  try {
+    localStorage.removeItem(authTokenStorageKey);
+  } catch {
+    return;
+  }
+}
+
+export function resetApiClientStateForTests(): void {
+  responseCsrfToken = null;
+  clearStoredAuthToken();
 }

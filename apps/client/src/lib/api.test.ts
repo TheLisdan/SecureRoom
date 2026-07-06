@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { api } from "./api";
+import { api, resetApiClientStateForTests } from "./api";
 
 describe("api client", () => {
   const fetchMock = vi.fn<typeof fetch>();
@@ -9,6 +9,8 @@ describe("api client", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     document.cookie = "csrf_token=; Max-Age=0; path=/";
+    localStorage.clear();
+    resetApiClientStateForTests();
   });
 
   it("returns null for unauthenticated current-user responses", async () => {
@@ -91,6 +93,7 @@ describe("api client", () => {
               name: "Owner",
             },
             csrfToken: "response-token",
+            accessToken: "response-access-token",
           }),
           { status: 200 },
         ),
@@ -106,8 +109,8 @@ describe("api client", () => {
     await api.deleteDataroom("00000000-0000-0000-0000-000000000002");
 
     const deleteRequest = fetchMock.mock.calls[1]?.[1] as RequestInit;
-    expect(new Headers(deleteRequest.headers).get("X-CSRF-Token")).toBe(
-      "response-token",
-    );
+    const headers = new Headers(deleteRequest.headers);
+    expect(headers.get("X-CSRF-Token")).toBe("response-token");
+    expect(headers.get("Authorization")).toBe("Bearer response-access-token");
   });
 });

@@ -36,6 +36,7 @@ export function useFilePreview(file: FileRecord | null) {
       try {
         const response = await fetch(api.previewUrl(currentFile.id), {
           credentials: "include",
+          headers: api.authHeaders(),
           signal: controller.signal,
         });
 

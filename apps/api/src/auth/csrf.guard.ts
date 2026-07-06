@@ -21,6 +21,10 @@ export class CsrfGuard implements CanActivate {
       return true;
     }
 
+    if (request.headers.authorization?.startsWith("Bearer ")) {
+      return true;
+    }
+
     if (!request.cookies?.[sessionCookieName]) {
       return true;
     }

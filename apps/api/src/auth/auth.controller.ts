@@ -40,7 +40,7 @@ export class AuthController {
   ) {
     const session = await this.authService.register(body);
     const csrfToken = this.setSessionCookies(response, session.token);
-    return { user: session.user, csrfToken };
+    return { user: session.user, csrfToken, accessToken: session.token };
   }
 
   @Post("login")
@@ -52,7 +52,7 @@ export class AuthController {
   ) {
     const session = await this.authService.login(body);
     const csrfToken = this.setSessionCookies(response, session.token);
-    return { user: session.user, csrfToken };
+    return { user: session.user, csrfToken, accessToken: session.token };
   }
 
   @Post("logout")
