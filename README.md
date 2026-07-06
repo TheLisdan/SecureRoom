@@ -4,6 +4,18 @@ Security-first Data Room MVP for storing, organizing and reviewing confidential 
 
 The assignment asked for a React Data Room SPA with dataroom creation, nested folders, file upload, file preview and basic CRUD flows. This implementation keeps the MVP small, but runs end to end with a real API, PostgreSQL persistence, private local file storage, typed shared contracts and authentication.
 
+## Quick Start
+
+Run the full app with one Docker command:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:5173`.
+
+This requires Docker with the Compose plugin, such as a current Docker Desktop install. The Docker setup does not need local `.env` files; the API waits for PostgreSQL and applies committed Prisma migrations on startup.
+
 ## Requirement Coverage
 
 | Requirement                                  | Status                                                                    |
@@ -53,7 +65,7 @@ packages/api-contract/src        Shared Zod schemas and route contracts
 pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/client/.env.example apps/client/.env
-docker compose up -d
+docker compose up -d postgres
 pnpm b prisma:migrate
 pnpm dev
 ```

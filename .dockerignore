@@ -1,0 +1,17 @@
+node_modules
+.pnpm-store
+dist
+coverage
+.turbo
+.DS_Store
+.env
+.env.*
+!apps/api/.env.example
+!apps/client/.env.example
+apps/api/private-storage
+apps/api/uploads
+apps/client/dist
+apps/client/playwright-report
+apps/client/test-results
+playwright-report
+test-results
