@@ -30,21 +30,27 @@ RUN pnpm --filter @secure-room/api-contract build \
 
 FROM base AS runner
 
+ENV PRISMA_ENGINES_CACHE_DIR="/app/node_modules/.cache/prisma"
+
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=build /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/packages/api-contract/package.json ./packages/api-contract/package.json
+COPY --from=build /app/packages/api-contract/node_modules ./packages/api-contract/node_modules
 COPY --from=build /app/packages/api-contract/dist ./packages/api-contract/dist
 
-RUN mkdir -p /app/apps/api/private-storage \
-  && chown -R node:node /app
+RUN mkdir -p /app/apps/api/private-storage /app/node_modules/.cache/prisma \
+  && chown -R node:node /app/apps/api/private-storage /app/node_modules/.cache
 
 USER node
 
+WORKDIR /app/apps/api
+
 EXPOSE 3000
 
-CMD ["sh", "-c", "pnpm --filter api prisma:deploy && pnpm --filter api start"]
+CMD ["sh", "-c", "./node_modules/.bin/prisma migrate deploy && node dist/main.js"]
