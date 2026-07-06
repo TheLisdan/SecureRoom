@@ -6,20 +6,20 @@ The assignment asked for a React Data Room SPA with dataroom creation, nested fo
 
 ## Requirement Coverage
 
-| Requirement                                  | Status                                                           |
-| -------------------------------------------- | ---------------------------------------------------------------- |
-| Create datarooms                             | Implemented                                                      |
-| Create nested folders                        | Implemented                                                      |
-| View folders and their contents              | Implemented with breadcrumb navigation and search                |
-| Rename folders                               | Implemented                                                      |
-| Delete folders recursively with nested files | Implemented                                                      |
-| Upload files                                 | Implemented with drag/drop and file picker                       |
-| View files in UI                             | Implemented for PDF, safe images, text, audio and video previews |
-| Rename files                                 | Implemented                                                      |
-| Delete files                                 | Implemented                                                      |
-| Same-name edge cases                         | Folder and file names are unique within the same parent location |
-| Authentication extra credit                  | Implemented with email/password and httpOnly JWT cookie          |
-| Search extra credit                          | Implemented by name and indexed text content within a dataroom   |
+| Requirement                                  | Status                                                                    |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| Create datarooms                             | Implemented                                                               |
+| Create nested folders                        | Implemented                                                               |
+| View folders and their contents              | Implemented with breadcrumb navigation and search                         |
+| Rename folders                               | Implemented                                                               |
+| Delete folders recursively with nested files | Implemented                                                               |
+| Upload files                                 | Implemented with drag/drop and file picker                                |
+| View files in UI                             | Implemented for PDF, safe images, text, audio and video previews          |
+| Rename files                                 | Implemented                                                               |
+| Delete files                                 | Implemented                                                               |
+| Same-name edge cases                         | Duplicate uploads are auto-renamed; folder names stay unique per location |
+| Authentication extra credit                  | Implemented with email/password and httpOnly JWT cookie                   |
+| Search extra credit                          | Implemented by name and indexed text content within a dataroom            |
 
 No hosted URL is included in this repository. The app is intended to be reviewed locally with the setup below.
 
@@ -103,7 +103,7 @@ pnpm sh <script>  # shared API contract
 - I used a real backend instead of browser-only mocks because secure file access, ownership checks and recursive deletes are easier to reason about when enforced server-side.
 - API and client share Zod schemas from `packages/api-contract`, so request/response shapes stay typed across the workspace.
 - Datarooms, folders, files, auth, storage and audit logging are separate Nest modules. The services stay focused on domain operations rather than framework plumbing.
-- Folder and file uniqueness is enforced per sibling location with normalized names, backed by Prisma unique constraints.
+- Folder uniqueness is enforced per sibling location with normalized names, backed by Prisma unique constraints. Duplicate file uploads in the same folder are automatically renamed with a numeric suffix before persistence.
 - Files are stored outside public static hosting. API preview/download routes authenticate the user and verify dataroom ownership before opening the private storage object.
 - The local `StorageService` is intentionally small and replaceable. A production deploy should swap it for S3, R2 or GCS while keeping the same private-read interface.
 - The UI keeps page orchestration in `DataroomWorkspace`, while auth, dataroom navigation, file upload, table rows, details panel, previews and dialogs live in their own feature components.

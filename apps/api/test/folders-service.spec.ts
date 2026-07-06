@@ -76,6 +76,12 @@ describe("FoldersService", () => {
     const auditOperation = { operation: "audit-delete" };
     const transaction = vi.fn().mockResolvedValue([]);
     const storageDelete = vi.fn().mockResolvedValue(undefined);
+    const fileFindMany = vi
+      .fn()
+      .mockResolvedValue([
+        { storageKey: "00000000-0000-0000-0000-000000000006.pdf" },
+        { storageKey: "00000000-0000-0000-0000-000000000007.txt" },
+      ]);
     const service = createService({
       folder: {
         findUnique: vi.fn().mockResolvedValue(folder),
@@ -89,12 +95,7 @@ describe("FoldersService", () => {
         delete: vi.fn().mockReturnValue(deleteOperation),
       },
       fileAsset: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([
-            { storageKey: "00000000-0000-0000-0000-000000000006.pdf" },
-            { storageKey: "00000000-0000-0000-0000-000000000007.txt" },
-          ]),
+        findMany: fileFindMany,
       },
       auditLog: {
         create: vi.fn().mockReturnValue(auditOperation),
@@ -105,6 +106,14 @@ describe("FoldersService", () => {
 
     await service.delete(user, folder.id);
 
+    expect(fileFindMany).toHaveBeenCalledWith({
+      where: {
+        folderId: {
+          in: [folder.id, "00000000-0000-0000-0000-000000000005"],
+        },
+      },
+      select: { storageKey: true },
+    });
     expect(transaction).toHaveBeenCalledWith([deleteOperation, auditOperation]);
     expect(storageDelete).toHaveBeenCalledTimes(2);
     expect(storageDelete).toHaveBeenCalledWith(

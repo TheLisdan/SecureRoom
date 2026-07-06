@@ -11,6 +11,7 @@ import { DataroomsService } from "../datarooms/datarooms.service.js";
 import { mapFile } from "../datarooms/mappers.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import { StorageService } from "../storage/storage.service.js";
+import { dedupeFileName } from "./file-name-dedup.js";
 import { validateFileUpload } from "./file-upload-validation.js";
 import { getPreviewContentType } from "./preview-types.js";
 import { extractSearchText } from "./search-text.js";
@@ -49,7 +50,8 @@ export class FilesService {
       input.dataroomId,
       input.folderId,
     );
-    await this.assertFileNameAvailable(
+
+    const availableName = await this.getAvailableFileName(
       input.dataroomId,
       input.folderId ?? null,
       validatedFile.name,
@@ -60,7 +62,7 @@ export class FilesService {
       validatedFile.storageExtension,
     );
     const searchText = extractSearchText({
-      fileName: validatedFile.name,
+      fileName: availableName,
       mimeType: validatedFile.mimeType,
       buffer: input.buffer,
     });
@@ -72,8 +74,8 @@ export class FilesService {
             dataroomId: input.dataroomId,
             folderId: input.folderId ?? null,
             folderKey: locationKey(input.folderId),
-            name: validatedFile.name,
-            normalizedName: normalizeSiblingName(validatedFile.name),
+            name: availableName,
+            normalizedName: normalizeSiblingName(availableName),
             mimeType: validatedFile.mimeType,
             sizeBytes: input.sizeBytes,
             storageKey,
@@ -271,5 +273,24 @@ export class FilesService {
     if (existing) {
       throw conflict("A file with this name already exists here.");
     }
+  }
+
+  private async getAvailableFileName(
+    dataroomId: string,
+    folderId: string | null,
+    requestedName: string,
+  ): Promise<string> {
+    const existingFiles = await this.prisma.fileAsset.findMany({
+      where: {
+        dataroomId,
+        folderKey: locationKey(folderId),
+      },
+      select: { name: true },
+    });
+
+    return dedupeFileName(
+      requestedName,
+      existingFiles.map((file) => file.name),
+    );
   }
 }

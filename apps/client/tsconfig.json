@@ -4,7 +4,8 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "vitest/globals"],
     "module": "ESNext",
-    "moduleResolution": "Bundler"
+    "moduleResolution": "Bundler",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"]
 }

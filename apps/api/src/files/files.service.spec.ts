@@ -43,7 +43,7 @@ describe("FilesService", () => {
     const service = new FilesService(
       {
         fileAsset: {
-          findFirst: vi.fn().mockResolvedValue(null),
+          findMany: vi.fn().mockResolvedValue([]),
           create,
         },
       } as unknown as PrismaService,
@@ -77,6 +77,64 @@ describe("FilesService", () => {
         name: "notes.txt",
         mimeType: "text/plain",
         searchText: "Revenue notes ARR grew by 18%.",
+      }),
+    });
+  });
+
+  it("renames duplicate uploads in the same folder with a copy suffix", async () => {
+    const create = vi.fn().mockImplementation(({ data }) =>
+      Promise.resolve({
+        ...file,
+        ...data,
+        id: "00000000-0000-0000-0000-000000000006",
+        createdAt: file.createdAt,
+        updatedAt: file.updatedAt,
+      }),
+    );
+    const service = new FilesService(
+      {
+        fileAsset: {
+          findMany: vi
+            .fn()
+            .mockResolvedValue([
+              { name: "Disclosure.pdf" },
+              { name: "Disclosure (1).pdf" },
+            ]),
+          create,
+        },
+      } as unknown as PrismaService,
+      {
+        assertOwner: vi.fn().mockResolvedValue({ id: file.dataroomId }),
+        assertFolderInDataroom: vi.fn().mockResolvedValue(undefined),
+      } as unknown as DataroomsService,
+      {
+        record: vi.fn().mockResolvedValue(undefined),
+      } as unknown as AuditService,
+      {
+        savePrivateFile: vi
+          .fn()
+          .mockResolvedValue("00000000-0000-0000-0000-000000000006.pdf"),
+        delete: vi.fn().mockResolvedValue(undefined),
+      } as unknown as StorageService,
+    );
+
+    await expect(
+      service.upload(user, {
+        dataroomId: file.dataroomId,
+        folderId: null,
+        originalName: "Disclosure.pdf",
+        mimeType: "application/pdf",
+        sizeBytes: 2048,
+        buffer: Buffer.from("%PDF-1.4"),
+        maxUploadBytes: 4096,
+      }),
+    ).resolves.toMatchObject({
+      name: "Disclosure (2).pdf",
+    });
+    expect(create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        name: "Disclosure (2).pdf",
+        normalizedName: "disclosure (2).pdf",
       }),
     });
   });
